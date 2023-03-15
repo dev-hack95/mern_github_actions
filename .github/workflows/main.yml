@@ -1,0 +1,47 @@
+name: MERN application
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+    strategy:
+      max-parallel: 2
+      matrix:
+        node-version: [16.x, 18.x]
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+    - name: Setup node ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+    - name: Lint javascript code
+      uses: github/super-linter@v4
+      env:
+        VALIDATE_ALL_CODEBASE: true
+        DEFAULT_BRANCH: main
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }
+    - name: Install Dependencies
+      run: |
+        npm install 
+        npm run build --if-present
+        npm test --if-present
+      env:
+        CI: true
+
+  build-docker-image:
+    runs-on: ubuntu-20.04
+    name: docker-build
+    needs: [build]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Build Docker image
+      run: docker builf -f ./Dockerfile . -t react-todo-app:latest
+      
